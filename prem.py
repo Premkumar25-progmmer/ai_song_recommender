@@ -33,63 +33,65 @@ songs = {
     ],
 }
 
-# 🌈 Page Setup
-st.set_page_config(page_title="Mood Beats", page_icon="🎧", layout="wide")
+# 🎨 Define a background color for each mood
+mood_colors = {
+    "Happy": "#FFD700",      # gold
+    "Sad": "#1E90FF",        # dodger blue
+    "Energetic": "#FF4500",  # orange red
+    "Chill": "#32CD32",      # lime green
+}
 
-# Full-page gradient background
-st.markdown("""
-    <style>
-    body {
-        background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
-        color: #fff;
-        font-family: 'Poppins', sans-serif;
-    }
-    .song-card {
-        background: rgba(255,255,255,0.15);
-        border-radius: 15px;
-        padding: 15px;
-        margin-bottom: 15px;
-        transition: all 0.3s ease;
-        text-align: center;
-        box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-    }
-    .song-card:hover {
-        transform: scale(1.05);
-        background: rgba(255,255,255,0.25);
-    }
-    a {
-        color: #ffd700;
-        font-weight: 600;
-        text-decoration: none;
-    }
-    a:hover {
-        text-decoration: underline;
-        color: #fff;
-    }
-    </style>
-""", unsafe_allow_html=True)
+# 🌈 Page Setup
+st.set_page_config(page_title="Mood Beats", page_icon="🎧", layout="centered")
 
 # 🎶 App Title
-st.markdown("<h1 style='text-align:center; color:white;'>🎵 Mood Beats - English Song Recommender 🎵</h1>", unsafe_allow_html=True)
-st.write("Select your current mood and discover songs to match your vibe! 🌟")
+st.markdown("<h1 style='text-align:center;'>🎵 Mood Beats 🎵</h1>", unsafe_allow_html=True)
+st.write("Select your current mood and get a perfect English song recommendation!")
 
 # 🎭 Mood Selection
 mood = st.selectbox("Choose your mood:", list(songs.keys()))
 
-# 🎧 Display Songs
+# 🎨 Change page background dynamically based on mood
 if mood:
-    st.markdown(f"### Songs for your **{mood}** mood:")
-    selected_songs = songs[mood]
-    random.shuffle(selected_songs)
+    color = mood_colors.get(mood, "#FFFFFF")
+    st.markdown(f"""
+        <style>
+            body {{
+                background-color: {color};
+                color: #111;
+                font-family: 'Poppins', sans-serif;
+            }}
+            .song-card {{
+                background: rgba(255,255,255,0.2);
+                border-radius: 15px;
+                padding: 20px;
+                margin-top: 20px;
+                text-align: center;
+                box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+                transition: transform 0.3s ease;
+            }}
+            .song-card:hover {{
+                transform: scale(1.05);
+                background: rgba(255,255,255,0.35);
+            }}
+            a {{
+                color: #111;
+                font-weight: bold;
+                text-decoration: none;
+            }}
+            a:hover {{
+                text-decoration: underline;
+            }}
+        </style>
+    """, unsafe_allow_html=True)
 
-    for title, link in selected_songs:
+# 🕹️ Recommend Button
+if st.button("Recommend a Song 🎧"):
+    if mood:
+        song = random.choice(songs[mood])
         st.markdown(f"""
-        <div class='song-card'>
-            <h4>{title}</h4>
-            <a href='{link}' target='_blank'>▶️ Play on YouTube</a>
-        </div>
+            <div class='song-card'>
+                <h2>{song[0]}</h2>
+                <a href='{song[1]}' target='_blank'>▶️ Watch on YouTube</a>
+            </div>
         """, unsafe_allow_html=True)
-
-# 🎉 Footer
-st.markdown("<hr><center>🎵 Made with ❤️ by TechBro & Prem 🎧</center>", unsafe_allow_html=True)
-
