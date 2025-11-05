@@ -1,254 +1,158 @@
-import random
-import streamlit as st
-import urllib.parse
+"""
+fetch_100_songs.py
 
-# songs_data now has tuples: (Title, Artist, URL, Genre, Language)
-songs_data = {
+Produces songs_100.csv with columns:
+title,artist,youtube_url,spotify_id,mood
+
+Requires:
+pip install spotipy pandas
+A Spotify developer client id/secret (set below).
+"""
+
+import os
+import csv
+import time
+import spotipy
+from spotipy.oauth2 import SpotifyClientCredentials
+import pandas as pd
+from typing import List, Tuple
+
+# ---------- CONFIG ----------
+SPOTIFY_CLIENT_ID = "YOUR_CLIENT_ID_HERE"
+SPOTIFY_CLIENT_SECRET = "YOUR_CLIENT_SECRET_HERE"
+OUTPUT_CSV = "songs_100.csv"
+
+# Moods and example search keywords (used to find relevant tracks)
+MOOD_KEYWORDS = {
     "Happy": [
-        ("Happy", "Pharrell Williams", "https://www.youtube.com/watch?v=ZbZSe6N_BXs", "Pop/Funk", "English"),
-        ("Uptown Funk", "Mark Ronson ft. Bruno Mars", "https://www.youtube.com/watch?v=OPf0YbXqDm0", "Dance/Funk", "English"),
-        ("Can't Stop the Feeling!", "Justin Timberlake", "https://www.youtube.com/watch?v=ru0K8uYEZWw", "Pop", "English"),
-        ("Shake It Off", "Taylor Swift", "https://www.youtube.com/watch?v=nfWlot6h_JM", "Pop", "English"),
-        ("Good as Hell", "Lizzo", "https://www.youtube.com/watch?v=vuq-VAiW9kw", "R&B/Soul", "English"),
-        ("Lovely Day", "Bill Withers", "https://www.youtube.com/watch?v=bO0yXbJd2iQ", "Soul/Classic", "English"),
-        ("I Wanna Dance with Somebody", "Whitney Houston", "https://www.youtube.com/watch?v=eH3giaIzONA", "80s Pop", "English")
+        "happy", "feel good", "party", "dance", "uplifting", "pop hit", "summer"
     ],
     "Sad": [
-        ("Someone Like You", "Adele", "https://www.youtube.com/watch?v=hLQl3WQQoQ0", "Ballad", "English"),
-        ("Let Her Go", "Passenger", "https://www.youtube.com/watch?v=RBumgq5yVrA", "Acoustic", "English"),
-        ("When I Was Your Man", "Bruno Mars", "https://www.youtube.com/watch?v=ekzHIouo8Q4", "Ballad", "English"),
-        ("Hello", "Adele", "https://www.youtube.com/watch?v=YQHsXMglC9A", "Soul", "English"),
-        ("Hurt", "Johnny Cash", "https://www.youtube.com/watch?v=vt1P_0f5w9g", "Acoustic", "English"),
-        ("Fix You", "Coldplay", "https://www.youtube.com/watch?v=k4V3Mo61fJM", "Rock", "English")
-    ],
-    "Relaxed": [
-        ("Let It Be", "The Beatles", "https://www.youtube.com/watch?v=QDYfEBY9NM4", "Classic Rock", "English"),
-        ("Perfect", "Ed Sheeran", "https://www.youtube.com/watch?v=2Vv-BfVoq4g", "Acoustic Pop", "English"),
-        ("Lovely", "Billie Eilish & Khalid", "https://www.youtube.com/watch?v=V1Pl8CzNzCw", "Atmospheric", "English"),
-        ("Ocean Eyes", "Billie Eilish", "https://www.youtube.com/watch?v=viimfQi_pUw", "Atmospheric", "English"),
-        ("Sunflower", "Post Malone & Swae Lee", "https://www.youtube.com/watch?v=ApXoWvfEYVU", "Hip-Hop/Chill", "English"),
-        ("Let Me Down Slowly", "Alec Benjamin", "https://www.youtube.com/watch?v=50VNCymT-Cs", "Acoustic Pop", "English"),
-        ("A Thousand Years", "Christina Perry", "https://www.youtube.com/watch?v=rtOvBOTyX00", "Ballad", "English")
+        "sad", "ballad", "melancholy", "heartbreak", "slow", "emotional"
     ],
     "Energetic": [
-        ("Believer", "Imagine Dragons", "https://www.youtube.com/watch?v=7wtfhZwyrcc", "Rock", "English"),
-        ("Thunder", "Imagine Dragons", "https://www.youtube.com/watch?v=fKopy74weus", "Pop/Rock", "English"),
-        ("Stronger", "Kanye West", "https://www.youtube.com/watch?v=PsO6ZnUZI0g", "Hip-Hop", "English"),
-        ("Don't Start Now", "Dua Lipa", "https://www.youtube.com/watch?v=oygrmJFKYZY", "Dance/Pop", "English"),
-        ("Can't Hold Us", "Macklemore & Ryan Lewis", "https://www.youtube.com/watch?v=2zNSgSzhBfM", "Hip-Hop", "English"),
-        ("Titanium", "David Guetta ft. Sia", "https://www.youtube.com/watch?v=JRfuAukYTKg", "EDM", "English")
+        "energetic", "upbeat", "workout", "party banger", "hit", "dance"
+    ],
+    "Romantic": [
+        "romantic", "love song", "romance", "romantic ballad", "slow love"
     ]
 }
 
-REMIX_STYLES = [
-    "Original Vibe",
-    "Acoustic Cover",
-    "8-bit/Chiptune",
-    "Dubstep Drop",
-    "Lo-Fi Slowed",
-    "Orchestral Sweep",
-    "Reggaeton Bounce"
-]
+# How many songs per mood to collect (sum should be >= 100)
+PER_MOOD = 25  # 25 * 4 = 100
 
-def generate_remix_description(song_title, remix_style):
-    if remix_style == "Original Vibe":
-        return f"The original track, perfectly tuned to your current mood."
-    elif remix_style == "Acoustic Cover":
-        return f"Imagine '{song_title}' stripped back—just guitar and raw emotion."
-    elif remix_style == "8-bit/Chiptune":
-        return f"A pixelated soundscape! '{song_title}' remixed as a classic video game theme."
-    elif remix_style == "Dubstep Drop":
-        return f"WARNING: Heavy bass! '{song_title}' is transformed into a high-energy dance floor anthem."
-    elif remix_style == "Lo-Fi Slowed":
-        return f"A chill, rainy-day take: '{song_title}' slowed and draped in vinyl crackle."
-    elif remix_style == "Orchestral Sweep":
-        return f"A cinematic epic: '{song_title}' swells with violins and powerful brass."
-    elif remix_style == "Reggaeton Bounce":
-        return f"Get ready to move! '{song_title}' now features a driving Latin rhythm and dembow."
-    return "A fresh take on the track, perfectly remixed for your vibe."
+# ---------- Spotify client ----------
+if SPOTIFY_CLIENT_ID == "YOUR_CLIENT_ID_HERE" or SPOTIFY_CLIENT_SECRET == "YOUR_CLIENT_SECRET_HERE":
+    raise SystemExit("Please set SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET in this script before running.")
 
-# Mood -> gradient families (random pick inside a family)
-MOOD_GRADIENTS = {
-    "Happy": [
-        "linear-gradient(135deg, #FFF59D 0%, #FFB74D 100%)",
-        "linear-gradient(135deg, #FFEEAD 0%, #FF8A65 100%)",
-        "linear-gradient(135deg, #FFF48F 0%, #FF7043 100%)"
-    ],
-    "Sad": [
-        "linear-gradient(135deg, #89CFF0 0%, #7257A5 100%)",
-        "linear-gradient(135deg, #A8C7FF 0%, #7B61FF 100%)",
-        "linear-gradient(135deg, #8EBEF5 0%, #5D4B8A 100%)"
-    ],
-    "Relaxed": [
-        "linear-gradient(135deg, #C7F9CC 0%, #7AE3D6 100%)",
-        "linear-gradient(135deg, #D0F2EA 0%, #A1E3DA 100%)",
-        "linear-gradient(135deg, #E0FFEF 0%, #9FE6D8 100%)"
-    ],
-    "Energetic": [
-        "linear-gradient(135deg, #FF7E5F 0%, #FEB47B 100%)",
-        "linear-gradient(135deg, #FF6A88 0%, #FF9A9E 100%)",
-        "linear-gradient(135deg, #7CFFB2 0%, #00E5FF 100%)"
-    ]
-}
-DEFAULT_GRADIENT = "linear-gradient(135deg, #FFDEE9 0%, #B5FFFC 100%)"
+auth_manager = SpotifyClientCredentials(client_id=SPOTIFY_CLIENT_ID, client_secret=SPOTIFY_CLIENT_SECRET)
+sp = spotipy.Spotify(auth_manager=auth_manager, requests_timeout=10, retries=3, status_retries=3)
 
-def pick_gradient_for_mood(mood):
-    return random.choice(MOOD_GRADIENTS.get(mood, [DEFAULT_GRADIENT]))
+def search_tracks_for_keyword(keyword: str, limit: int = 20) -> List[dict]:
+    """Search Spotify for tracks matching a keyword."""
+    q = f"{keyword}"
+    try:
+        res = sp.search(q=q, type="track", limit=limit)
+    except Exception as e:
+        print("Spotify search error:", e)
+        return []
+    items = res.get("tracks", {}).get("items", [])
+    return items
 
-# Streamlit config
-st.set_page_config(page_title="Play It Bro — Mood Vibes", page_icon="🎧", layout="centered")
+def collect_mood_tracks(mood: str, keywords: List[str], need: int) -> List[Tuple[str,str,str,str]]:
+    """Collect unique tracks for a mood using several keywords.
+    Returns list of tuples: (title, artist, spotify_track_id, youtube_search_url)
+    """
+    collected = []
+    seen_track_ids = set()
+    # Try each keyword (broaden search)
+    for kw in keywords:
+        if len(collected) >= need:
+            break
+        items = search_tracks_for_keyword(kw, limit=30)
+        for it in items:
+            tid = it.get("id")
+            if not tid or tid in seen_track_ids:
+                continue
+            name = it.get("name", "").strip()
+            artists = ", ".join([a["name"] for a in it.get("artists", [])])
+            # Construct YouTube search URL (safe fallback)
+            yt_search_query = f"{name} {artists}"
+            youtube_search_url = f"https://www.youtube.com/results?search_query={requests_quote(yt_search_query)}"
+            collected.append((name, artists, youtube_search_url, tid))
+            seen_track_ids.add(tid)
+            if len(collected) >= need:
+                break
+        # small pause to be polite
+        time.sleep(0.25)
+    return collected
 
-# Session defaults
-if "last_recommendation" not in st.session_state:
-    st.session_state["last_recommendation"] = None
-if "show_player" not in st.session_state:
-    st.session_state["show_player"] = False
+def requests_quote(s: str) -> str:
+    # simple URL-encoding for query
+    from urllib.parse import quote_plus
+    return quote_plus(s)
 
-# Header
-st.markdown("<h1 style='text-align:center; margin-bottom:6px;'>🎶 Play It Bro — Mood Vibes</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align:center; color:#444; margin-top:0;'>Pick a mood, choose languages, and get a vibey song!</p>", unsafe_allow_html=True)
-st.markdown("---")
+def main():
+    all_rows = []
+    print("Collecting songs from Spotify...")
+    for mood, keywords in MOOD_KEYWORDS.items():
+        print(f" - Mood: {mood}")
+        targets = PER_MOOD
+        mood_tracks = collect_mood_tracks(mood, keywords, targets)
+        print(f"   collected {len(mood_tracks)} for {mood}")
+        for (title, artist, yt_search, spid) in mood_tracks:
+            # Save as: title, artist, youtube_url (search), spotify_id, mood
+            all_rows.append({
+                "title": title,
+                "artist": artist,
+                "youtube_url": yt_search,
+                "spotify_id": spid,
+                "mood": mood
+            })
 
-# Controls row
-col_mood, col_spacer, col_lang = st.columns([2, .2, 2])
+    # If we didn't reach 100 exactly (due to de-duping), pad by searching top playlists
+    total = len(all_rows)
+    print(f"Total collected: {total}")
+    if total < 100:
+        # try fetching top tracks from global playlists
+        need_more = 100 - total
+        print(f"Need {need_more} more tracks — pulling from 'Top 50 Global' playlist")
+        try:
+            # Spotify's Top 50 global playlist id
+            top50_playlist_id = "37i9dQZEVXbMDoHDwVN2tF"  # may change; fallback to charts
+            playlist = sp.playlist_tracks(top50_playlist_id, limit=100)
+            for item in playlist.get("items", []):
+                track = item.get("track")
+                if not track:
+                    continue
+                tid = track.get("id")
+                if tid in [r["spotify_id"] for r in all_rows]:
+                    continue
+                name = track.get("name")
+                artists = ", ".join([a["name"] for a in track.get("artists", [])])
+                yt_search = f"https://www.youtube.com/results?search_query={requests_quote(name + ' ' + artists)}"
+                # assign leftover tracks to 'Happy' by default (or cycle moods)
+                mood_assign = "Happy" if len(all_rows) % 4 == 0 else ["Happy","Sad","Energetic","Romantic"][len(all_rows) % 4]
+                all_rows.append({
+                    "title": name,
+                    "artist": artists,
+                    "youtube_url": yt_search,
+                    "spotify_id": tid,
+                    "mood": mood_assign
+                })
+                if len(all_rows) >= 100:
+                    break
+            print(f"After padding, total = {len(all_rows)}")
+        except Exception as e:
+            print("Could not fetch playlist for padding:", e)
 
-with col_mood:
-    mood_choice = st.selectbox("Choose Mood:", options=list(songs_data.keys()), index=0, help="Select the mood you want.")
+    # Trim to exactly 100
+    all_rows = all_rows[:100]
 
-with col_lang:
-    # Stylish language multiselect (flag + text)
-    LANG_LABELS = ["🇮🇳 Telugu", "🇮🇳 Hindi", "🇺🇸 English", "🇮🇳 Tamil"]
-    label_to_lang = {
-        "🇮🇳 Telugu": "Telugu",
-        "🇮🇳 Hindi": "Hindi",
-        "🇺🇸 English": "English",
-        "🇮🇳 Tamil": "Tamil"
-    }
-    selected_labels = st.multiselect("Language(s):", options=LANG_LABELS, default=["🇺🇸 English"])
-    selected_langs = [label_to_lang[l] for l in selected_labels] if selected_labels else []
+    # Write CSV
+    df = pd.DataFrame(all_rows, columns=["title","artist","youtube_url","spotify_id","mood"])
+    df.to_csv(OUTPUT_CSV, index=False, encoding="utf-8")
+    print(f"Wrote {len(df)} rows to {OUTPUT_CSV} — open that CSV and upload to your Streamlit app.")
 
-# Remix style
-remix_choice = st.selectbox("Remix Style:", REMIX_STYLES, index=0, help="Pick a simulated remix vibe.")
-
-# Show player toggle
-st.session_state["show_player"] = st.toggle("Show YouTube Player", value=st.session_state["show_player"])
-
-st.markdown("---")
-
-# Generate recommendation button
-if st.button("Generate Song Recommendation ✨", use_container_width=True):
-    # Filter by mood -> initial list
-    mood_songs = songs_data.get(mood_choice, [])
-    # Filter by language if any selected
-    if selected_langs:
-        filtered = [s for s in mood_songs if s[4] in selected_langs]
-    else:
-        filtered = mood_songs[:]
-
-    if not filtered:
-        st.warning("No songs found for this mood + language selection. Try selecting more languages or a different mood.")
-    else:
-        song = random.choice(filtered)
-        title, artist, url, genre, language = song
-        remix_desc = generate_remix_description(title, remix_choice)
-
-        st.session_state["last_recommendation"] = {
-            "title": title,
-            "artist": artist,
-            "url": url,
-            "genre": genre,
-            "language": language,
-            "remix_style": remix_choice,
-            "remix_desc": remix_desc
-        }
-
-# Display recommendation
-rec = st.session_state.get("last_recommendation")
-active_gradient = pick_gradient_for_mood(mood_choice) if mood_choice else DEFAULT_GRADIENT
-
-# Inject colorful gradient background + updated styling
-st.markdown(f"""
-<style>
-/* App background */
-.stApp {{
-    background: {active_gradient};
-    font-family: 'Poppins', 'Segoe UI', Roboto, Arial, sans-serif;
-    color: #111;
-}}
-
-/* Card */
-.info-card {{
-    background: rgba(255,255,255,0.95);
-    padding: 18px;
-    border-radius: 14px;
-    box-shadow: 0 12px 40px rgba(0,0,0,0.08);
-    margin-top: 16px;
-}}
-
-/* Big primary button style */
-div.stButton > button {{
-    background: linear-gradient(90deg,#FF6A88,#FFA5C0);
-    color:white;
-    border-radius:10px;
-    height:48px;
-    font-weight:800;
-}}
-
-.lang-pill {{
-    display:inline-block;
-    background: rgba(255,255,255,0.9);
-    padding:8px 12px;
-    border-radius:999px;
-    margin:4px;
-    font-weight:700;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.06);
-}}
-
-.footer {{
-    text-align:center;
-    color:#222;
-    margin-top:24px;
-}}
-</style>
-""", unsafe_allow_html=True)
-
-if rec:
-    st.success(f"✅ Vibe: {mood_choice} — {rec['title']} by {rec['artist']} ({rec['language']})")
-    st.markdown(f"""
-    <div class="info-card">
-        <h2 style="text-align:center; margin:6px 0;">🎵 {rec['title']}</h2>
-        <h4 style="text-align:center; margin:4px 0; color:#333;">by <b>{rec['artist']}</b></h4>
-        <p style="text-align:center; font-style:italic; color:#444;">{rec['remix_desc']}</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # Player or play link
-    if st.session_state["show_player"]:
-        # embedding may be blocked for some videos; use a safe play link below
-        embed_link = rec['url'].replace("watch?v=", "embed/").replace("https://www.youtube.com", "https://www.youtube-nocookie.com")
-        st.markdown(f"""
-        <div style="text-align:center; margin-top:12px;">
-            <iframe width="560" height="315" src="{embed_link}" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-            <div style="margin-top:10px;">
-                <a href="{rec['url']}" target="_blank" style="display:inline-block; background:linear-gradient(90deg,#FF6A88,#FFA5C0); color:white; padding:10px 18px; border-radius:10px; text-decoration:none; font-weight:700;">▶️ Open on YouTube</a>
-                <a href="https://open.spotify.com/search/{urllib.parse.quote_plus(rec['title'] + ' ' + rec['artist'])}" target="_blank" style="display:inline-block; margin-left:8px; background:linear-gradient(90deg,#6A11CB,#2575FC); color:white; padding:10px 18px; border-radius:10px; text-decoration:none; font-weight:700;">🎧 Open on Spotify</a>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-    else:
-        # show play buttons only
-        st.markdown(f"""
-        <div style="text-align:center; margin-top:12px;">
-            <a href="{rec['url']}" target="_blank" style="display:inline-block; background:linear-gradient(90deg,#FF6A88,#FFA5C0); color:white; padding:12px 20px; border-radius:10px; text-decoration:none; font-weight:800;">▶️ Play on YouTube</a>
-            <a href="https://open.spotify.com/search/{urllib.parse.quote_plus(rec['title'] + ' ' + rec['artist'])}" target="_blank" style="display:inline-block; margin-left:8px; background:linear-gradient(90deg,#6A11CB,#2575FC); color:white; padding:12px 20px; border-radius:10px; text-decoration:none; font-weight:800;">🎧 Spotify</a>
-        </div>
-        """, unsafe_allow_html=True)
-else:
-    # show friendly hint and language pill visuals
-    st.markdown("<div style='text-align:center; margin-top:12px;'>Choose languages (flag pills) and press the pink button to get a song 🎶</div>", unsafe_allow_html=True)
-    # display selected language pills for visual flair
-    if selected_labels:
-        pill_html = "".join([f"<span class='lang-pill'>{lab}</span>" for lab in selected_labels])
-        st.markdown(f"<div style='text-align:center; margin-top:10px;'>{pill_html}</div>", unsafe_allow_html=True)
-
-st.markdown("<div class='footer'>Developed with ❤️ by <b>Chilkamarri Prem Kumar (TechBro)</b></div>", unsafe_allow_html=True)
+if __name__ == "__main__":
+    main()
