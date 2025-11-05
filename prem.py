@@ -5,14 +5,14 @@ import random
 songs_db = {
     "Happy": {
         "Telugu": [
-            ("Rowdy Baby - Maari 2", "https://www.youtube.com/watch?v=x6Q7c9RyMzk&list=RDx6Q7c9RyMzk&start_radio=1"),
-            ("My Name Is Billa - Billa", "https://www.youtube.com/watch?v=pfNF2Vqr3l0&list=RDpfNF2Vqr3l0&start_radio=1"),
-            ("Bommali - billa", "https://www.youtube.com/watch?v=YLcCryHUNOg&list=RDYLcCryHUNOg&start_radio=1"),
-            ("Vibe Undi - Mirai", "https://www.youtube.com/watch?v=sUuLY8-LjKM&list=RDsUuLY8-LjKM&start_radio=1"),
-            ("Koyila Music  - Maari 2", "https://www.youtube.com/watch?v=uhY2fqU_1yA&list=RDuhY2fqU_1yA&start_radio=1"),
-            ("Monica - COOLIE", "https://www.youtube.com/watch?v=K3nRKezdDIM&list=RDK3nRKezdDIM&start_radio=1"),
-            ("Ma Ma Mahesha - Sarkaru Vaari Paata", "https://www.youtube.com/watch?v=3kcadMVFolY&list=RD3kcadMVFolY&start_radio=1"),
-            ("Kurchi Madathapetti -Guntur Kaaram", "https://www.youtube.com/watch?v=gh3FyLT7WVg&list=RDgh3FyLT7WVg&start_radio=1")
+            ("Rowdy Baby - Maari 2", "https://www.youtube.com/watch?v=x6Q7c9RyMzk"),
+            ("My Name Is Billa - Billa", "https://www.youtube.com/watch?v=pfNF2Vqr3l0"),
+            ("Bommali - Billa", "https://www.youtube.com/watch?v=YLcCryHUNOg"),
+            ("Vibe Undi - Mirai", "https://www.youtube.com/watch?v=sUuLY8-LjKM"),
+            ("Koyila Music - Maari 2", "https://www.youtube.com/watch?v=uhY2fqU_1yA"),
+            ("Monica - Coolie", "https://www.youtube.com/watch?v=K3nRKezdDIM"),
+            ("Ma Ma Mahesha - Sarkaru Vaari Paata", "https://www.youtube.com/watch?v=3kcadMVFolY"),
+            ("Kurchi Madathapetti - Guntur Kaaram", "https://www.youtube.com/watch?v=gh3FyLT7WVg")
         ],
         "Hindi": [
             ("Kala Chashma - Baar Baar Dekho", "https://www.youtube.com/watch?v=k4yXQkG2s1E"),
@@ -90,49 +90,46 @@ gradients = {
 def random_gradient(mood):
     return random.choice(gradients[mood])
 
-# 🌈 Apply background gradient
-mood_placeholder = st.empty()
-
-# 🎧 App title
+# 🎧 Title
 st.markdown("<h1 style='text-align:center; color:#FF4081;'>🎶 Play It Bro - Mood Based Song Recommender 🎵</h1>", unsafe_allow_html=True)
 st.write("#### Let's find the perfect song for your vibe!")
 
 # 🎭 Mood selection
 mood = st.radio("Select your mood:", list(songs_db.keys()), horizontal=True)
 
-# 🌐 Language multiselect (Telugu, Hindi, Tamil only)
+# 🌐 Language selection
 languages = st.multiselect("Choose languages:", ["Telugu", "Hindi", "Tamil"], default=["Telugu"])
 
-# 🖼️ Apply mood gradient background dynamically
+# 🌈 Background
 bg_gradient = random_gradient(mood)
-page_bg = f"""
+st.markdown(f"""
 <style>
 [data-testid="stAppViewContainer"] {{
 background: {bg_gradient};
 background-attachment: fixed;
 }}
 </style>
-"""
-st.markdown(page_bg, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
-# 🎵 Recommend button
+# 🎵 Recommend
 if st.button("🎧 Recommend Me a Song"):
     selected = []
     for lang in languages:
         selected += songs_db[mood].get(lang, [])
     if selected:
         song_name, song_link = random.choice(selected)
+        embed_link = song_link.replace("watch?v=", "embed/").replace("https://www.youtube.com", "https://www.youtube-nocookie.com")
+
         st.markdown(f"""
-        <div style="text-align:center; background-color:rgba(0,0,0,0.6); color:white; padding:25px; border-radius:15px;">
+        <div style="text-align:center; background-color:rgba(0,0,0,0.65); color:white; padding:25px; border-radius:15px;">
             <h2>🎵 Mood: <span style="color:#FFD700;">{mood}</span></h2>
             <h3>✨ Song: <a href="{song_link}" target="_blank" style="color:#4CAF50; text-decoration:none;">{song_name}</a></h3>
-            <iframe width="360" height="215" src="{song_link.replace('watch?v=', 'embed/')}" frameborder="0" allowfullscreen></iframe>
-            <p style="color:#ccc;">Enjoy the beat 🎧</p>
+            <iframe width="360" height="215" src="{embed_link}" frameborder="0" allowfullscreen></iframe>
+            <p style="color:#ccc;">If the video doesn't play, <a href="{song_link}" target="_blank" style="color:#FFD700;">open on YouTube 🔗</a></p>
         </div>
         """, unsafe_allow_html=True)
     else:
         st.warning("No songs found for your selected mood and language!")
 
-# 🎨 Footer
+# Footer
 st.markdown("<hr><p style='text-align:center; color:gray;'>Built with ❤️ by Prem Kumar | Play It Bro 🎶</p>", unsafe_allow_html=True)
-
