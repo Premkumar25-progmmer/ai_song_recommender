@@ -5,9 +5,14 @@ import random
 songs_db = {
     "Happy": {
         "Telugu": [
-            ("Rowdy Baby - Maari 2", "https://www.youtube.com/watch?v=x6Q7c9RyMzk"),
-            ("Ma Ma Mahesha - Sarkaru Vaari Paata", "https://www.youtube.com/watch?v=k6ZrM5vYxCk"),
-            ("Whattey Beauty - Bheeshma", "https://www.youtube.com/watch?v=TLaaK5gO6Hk")
+            ("Rowdy Baby - Maari 2", "https://www.youtube.com/watch?v=x6Q7c9RyMzk&list=RDx6Q7c9RyMzk&start_radio=1"),
+            ("My Name Is Billa - Billa", "https://www.youtube.com/watch?v=pfNF2Vqr3l0&list=RDpfNF2Vqr3l0&start_radio=1"),
+            ("Bommali - billa", "https://www.youtube.com/watch?v=YLcCryHUNOg&list=RDYLcCryHUNOg&start_radio=1"),
+            ("Vibe Undi - Mirai", "https://www.youtube.com/watch?v=sUuLY8-LjKM&list=RDsUuLY8-LjKM&start_radio=1"),
+            ("Koyila Music  - Maari 2", "https://www.youtube.com/watch?v=uhY2fqU_1yA&list=RDuhY2fqU_1yA&start_radio=1"),
+            ("Monica - COOLIE", "https://www.youtube.com/watch?v=K3nRKezdDIM&list=RDK3nRKezdDIM&start_radio=1"),
+            ("Ma Ma Mahesha - Sarkaru Vaari Paata", "https://www.youtube.com/watch?v=3kcadMVFolY&list=RD3kcadMVFolY&start_radio=1"),
+            ("Kurchi Madathapetti -Guntur Kaaram", "https://www.youtube.com/watch?v=gh3FyLT7WVg&list=RDgh3FyLT7WVg&start_radio=1")
         ],
         "Hindi": [
             ("Kala Chashma - Baar Baar Dekho", "https://www.youtube.com/watch?v=k4yXQkG2s1E"),
@@ -130,3 +135,4 @@ if st.button("🎧 Recommend Me a Song"):
 
 # 🎨 Footer
 st.markdown("<hr><p style='text-align:center; color:gray;'>Built with ❤️ by Prem Kumar | Play It Bro 🎶</p>", unsafe_allow_html=True)
+
