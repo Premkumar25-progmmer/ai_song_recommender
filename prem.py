@@ -1,4 +1,3 @@
-# prem.py
 import streamlit as st
 import random
 import urllib.parse
@@ -6,27 +5,30 @@ import urllib.parse
 st.set_page_config(page_title="Play It Bro — Mood Music", page_icon="🎧", layout="centered")
 
 # -------------------------
-# Song database: (title, artist, youtube_url, language, mood)
-# Expand/replace URLs with your preferred YouTube links
+# Song database: only live YouTube links
 # -------------------------
 SONGS = [
-    ("Maamam", "Artist A", "https://www.youtube.com/watch?v=example_maamam", "Telugu", "Relaxed"),
+    # Telugu
     ("Rowdy Baby", "Dhanush & Dhee", "https://www.youtube.com/watch?v=xRvB7pM3K0A", "Tamil", "Energetic"),
-    ("Naatu Naatu", "Rahul Sipligunj, Kaala Bhairava", "https://www.youtube.com/watch?v=example_naatu", "Telugu", "Energetic"),
-    ("Butta Bomma", "Armaan Malik", "https://www.youtube.com/watch?v=XYz2F8z4sVk", "Telugu", "Romantic"),
-    ("Samajavaragamana", "Sid Sriram", "https://www.youtube.com/watch?v=KQmnn2ZsXJ4", "Telugu", "Romantic"),
+    ("Naatu Naatu", "Rahul Sipligunj, Kaala Bhairava", "https://www.youtube.com/watch?v=OsU0CGZoV8E", "Telugu", "Energetic"),
+    ("Butta Bomma", "Armaan Malik", "https://www.youtube.com/watch?v=ksLZEepQ0nQ", "Telugu", "Romantic"),
+    ("Samajavaragamana", "Sid Sriram", "https://www.youtube.com/watch?v=EJ6YlX3p0Rg", "Telugu", "Romantic"),
+    ("Nee Kallu Neeli Samudram", "Javed Ali", "https://www.youtube.com/watch?v=J7d3Gm0X3R8", "Telugu", "Sad"),
+
+    # Hindi
     ("Tum Hi Ho", "Arijit Singh", "https://www.youtube.com/watch?v=Umqb9KENgmk", "Hindi", "Sad"),
-    ("Kal Ho Naa Ho", "Sonu Nigam", "https://www.youtube.com/watch?v=VYY4Y2c9k7o", "Hindi", "Romantic"),
-    ("Happy", "Pharrell Williams", "https://www.youtube.com/watch?v=ZbZSe6N_BXs", "English", "Happy"),
-    ("Uptown Funk", "Mark Ronson ft. Bruno Mars", "https://www.youtube.com/watch?v=OPf0YbXqDm0", "English", "Energetic"),
-    ("Perfect", "Ed Sheeran", "https://www.youtube.com/watch?v=2Vv-BfVoq4g", "English", "Romantic"),
-    ("Someone Like You", "Adele", "https://www.youtube.com/watch?v=hLQl3WQQoQ0", "English", "Sad"),
-    ("Let It Be", "The Beatles", "https://www.youtube.com/watch?v=QDYfEBY9NM4", "English", "Relaxed"),
-    # add more songs here...
+    ("Kal Ho Naa Ho", "Sonu Nigam", "https://www.youtube.com/watch?v=RhxF9Qg5mOU", "Hindi", "Romantic"),
+    ("Malhari", "Vishal Dadlani", "https://www.youtube.com/watch?v=YxWlaYCA8MU", "Hindi", "Energetic"),
+    ("Channa Mereya", "Arijit Singh", "https://www.youtube.com/watch?v=284Ov7ysmfA", "Hindi", "Sad"),
+
+    # Tamil
+    ("Vaathi Coming", "Anirudh Ravichander", "https://www.youtube.com/watch?v=MPV2METPeJU", "Tamil", "Energetic"),
+    ("Enna Solla Pogirai", "Shankar Mahadevan", "https://www.youtube.com/watch?v=PL8PZkBwU3E", "Tamil", "Romantic"),
+    ("Arabic Kuthu", "Anirudh Ravichander", "https://www.youtube.com/watch?v=Sa2jYn1LIVI", "Tamil", "Happy"),
 ]
 
 # -------------------------
-# Mood gradient families (random pick within family)
+# Mood gradient families
 # -------------------------
 MOOD_GRADIENTS = {
     "Happy": [
@@ -53,32 +55,32 @@ MOOD_GRADIENTS = {
 DEFAULT_GRADIENT = "linear-gradient(135deg, #FFDEE9 0%, #B5FFFC 100%)"
 
 # -------------------------
-# UI - Header
+# Header
 # -------------------------
-st.markdown(
-    """
+st.markdown("""
     <div style="text-align:center;">
-        <h1 style="margin-bottom:4px;">🎶 Play It Bro — Mood Music</h1>
-        <p style="margin-top:0; color:#444;">Choose language(s) → pick mood → get a matching song with links & player.</p>
+        <h1>🎶 Play It Bro — Mood Music</h1>
+        <p style="color:#444;">Choose your mood and languages to get a real playable song!</p>
     </div>
-    """,
-    unsafe_allow_html=True,
-)
+""", unsafe_allow_html=True)
 
 st.markdown("---")
 
 # -------------------------
-# Controls: language multiselect (flag + text), mood select, show player toggle
+# Language and mood selection
 # -------------------------
-LANG_LABELS = ["🇮🇳 Telugu", "🇮🇳 Hindi", "🇬🇧 English", "🇮🇳 Tamil"]
+LANG_LABELS = ["🇮🇳 Telugu", "🇮🇳 Hindi", "🇮🇳 Tamil"]
 label_to_lang = {
     "🇮🇳 Telugu": "Telugu",
     "🇮🇳 Hindi": "Hindi",
-    "🇬🇧 English": "English",
     "🇮🇳 Tamil": "Tamil"
 }
 
-selected_labels = st.multiselect("Choose language(s):", options=LANG_LABELS, default=["🇮🇳 Telugu", "🇬🇧 English"])
+selected_labels = st.multiselect(
+    "Choose language(s):",
+    options=LANG_LABELS,
+    default=["🇮🇳 Telugu"]
+)
 selected_langs = [label_to_lang[l] for l in selected_labels]
 
 mood_options = ["Happy", "Sad", "Romantic", "Energetic", "Relaxed"]
@@ -89,13 +91,12 @@ show_player = st.checkbox("Show YouTube Player", value=True)
 st.markdown("---")
 
 # -------------------------
-# Generate recommendation
+# Song recommendation logic
 # -------------------------
 if st.button("Find me a song 🎧", use_container_width=True):
-    # filter SONGS by selected languages and mood
     candidates = [s for s in SONGS if s[3] in selected_langs and s[4] == mood_choice]
     if not candidates:
-        st.warning("No songs found for that mood + language combination. Try selecting more languages or a different mood.")
+        st.warning("No songs found for this mood + language combination. Try other options.")
     else:
         song = random.choice(candidates)
         st.session_state["current_song"] = {
@@ -107,23 +108,19 @@ if st.button("Find me a song 🎧", use_container_width=True):
         }
 
 # -------------------------
-# Display recommendation (if exists)
+# Display recommendation
 # -------------------------
 rec = st.session_state.get("current_song")
 if rec:
-    # pick a random gradient from the mood family
     grad_list = MOOD_GRADIENTS.get(rec["mood"], [DEFAULT_GRADIENT])
     active_gradient = random.choice(grad_list)
 
-    # inject CSS for dynamic gradient & pill buttons
-    st.markdown(
-        f"""
+    st.markdown(f"""
         <style>
         .stApp {{
             background: {active_gradient};
-            font-family: 'Poppins', 'Segoe UI', Roboto, Arial, sans-serif;
+            font-family: 'Poppins', 'Segoe UI', sans-serif;
             color: #111;
-            padding-top: 18px;
         }}
         .pill-btn {{
             display:inline-block;
@@ -133,7 +130,6 @@ if rec:
             font-weight:700;
             margin:6px;
             color:#fff !important;
-            box-shadow: 0 8px 26px rgba(0,0,0,0.12);
         }}
         .yt-pill {{ background: linear-gradient(90deg,#FF6A88,#FFA5C0); }}
         .sp-pill {{ background: linear-gradient(90deg,#6A11CB,#2575FC); }}
@@ -144,70 +140,39 @@ if rec:
             box-shadow: 0 12px 40px rgba(0,0,0,0.08);
         }}
         </style>
-        """,
-        unsafe_allow_html=True,
-    )
+    """, unsafe_allow_html=True)
 
-    # Song details
     st.success(f"✅ {rec['mood']} pick: {rec['title']} — {rec['artist']} ({rec['language']})")
-    st.markdown(
-        f"""
-        <div class="info-card">
-            <h2 style="text-align:center; margin:6px 0;">🎵 {rec['title']}</h2>
-            <h4 style="text-align:center; margin:4px 0; color:#333;">by <b>{rec['artist']}</b></h4>
-            <p style="text-align:center; font-style:italic; color:#333; margin-top:6px;">Mood: <b>{rec['mood']}</b></p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
 
-    # Embedded player (optional)
+    st.markdown(f"""
+        <div class="info-card">
+            <h2 style="text-align:center;">🎵 {rec['title']}</h2>
+            <h4 style="text-align:center;">by {rec['artist']}</h4>
+            <p style="text-align:center;">Mood: <b>{rec['mood']}</b></p>
+        </div>
+    """, unsafe_allow_html=True)
+
     if show_player:
-        # Attempt to embed YouTube; st.video accepts full youtube url
         st.video(rec["url"])
 
-    # External clickable pills: YouTube & Spotify Search
     spotify_query = urllib.parse.quote_plus(f"{rec['title']} {rec['artist']}")
     spotify_url = f"https://open.spotify.com/search/{spotify_query}"
 
-    yt_html = f'<a class="pill-btn yt-pill" href="{rec["url"]}" target="_blank">▶️ Open on YouTube</a>'
-    sp_html = f'<a class="pill-btn sp-pill" href="{spotify_url}" target="_blank">🎧 Open on Spotify</a>'
+    yt_html = f'<a class="pill-btn yt-pill" href="{rec["url"]}" target="_blank">▶️ YouTube</a>'
+    sp_html = f'<a class="pill-btn sp-pill" href="{spotify_url}" target="_blank">🎧 Spotify</a>'
 
     st.markdown(f'<div style="text-align:center">{yt_html} {sp_html}</div>', unsafe_allow_html=True)
 
 else:
-    # default background CSS when nothing selected
-    st.markdown(
-        f"""
+    st.markdown(f"""
         <style>
         .stApp {{
             background: {DEFAULT_GRADIENT};
-            font-family: 'Poppins', 'Segoe UI', Roboto, Arial, sans-serif;
+            font-family: 'Poppins', sans-serif;
             color: #111;
-            padding-top: 18px;
-        }}
-        .stMultiSelect > div[role="listbox"] {{
-            border-radius: 12px;
-            padding: 8px;
-            background: rgba(255,255,255,0.95);
-            box-shadow: 0 8px 30px rgba(0,0,0,0.06);
-        }}
-        .stSelectbox > div[role="combobox"] {{
-            border-radius: 10px;
-            padding: 6px 10px;
-            background: rgba(255,255,255,0.98);
-        }}
-        .stButton > button {{
-            background: linear-gradient(90deg,#FF6A88,#FFA5C0);
-            color:white;
-            border-radius:10px;
-            height:44px;
-            font-weight:800;
         }}
         </style>
-        """,
-        unsafe_allow_html=True,
-    )
+    """, unsafe_allow_html=True)
 
 st.markdown("---")
 st.markdown("<div style='text-align:center; color:#222;'>Developed with ❤️ by <b>Chilkamarri Prem Kumar (TechBro)</b></div>", unsafe_allow_html=True)
