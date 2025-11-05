@@ -73,17 +73,17 @@ gradients = {
 def random_gradient(mood):
     return random.choice(gradients[mood])
 
-# 🌈 Page Setup
+# 🌈 Page setup
 st.markdown("<h1 style='text-align:center; color:#FF4081;'>🎶 Play It Bro - Mood Based Song Recommender 🎵</h1>", unsafe_allow_html=True)
 st.write("#### Let's find the perfect song for your vibe!")
 
-# 🎭 Mood select
+# 🎭 Mood selection
 mood = st.radio("Select your mood:", list(songs_db.keys()), horizontal=True)
 
 # 🌐 Language multiselect
 languages = st.multiselect("Choose languages:", ["Telugu", "Hindi", "Tamil"], default=["Telugu"])
 
-# 🎨 Background color based on mood
+# 🎨 Background color
 bg_gradient = random_gradient(mood)
 page_bg = f"""
 <style>
@@ -102,17 +102,20 @@ if st.button("🎧 Recommend Me a Song"):
         selected += songs_db[mood].get(lang, [])
     if selected:
         song_name, song_link = random.choice(selected)
-        embed_link = song_link.replace("watch?v=", "embed/")
         st.markdown(f"""
         <div style="text-align:center; background-color:rgba(0,0,0,0.6); color:white; padding:25px; border-radius:15px;">
             <h2>🎵 Mood: <span style="color:#FFD700;">{mood}</span></h2>
             <h3>✨ {song_name}</h3>
-            <iframe width="360" height="215" src="{embed_link}" frameborder="0" allowfullscreen></iframe>
-            <p><a href="{song_link}" target="_blank" style="color:#4CAF50;">▶️ Open on YouTube</a></p>
-            <p style="color:#ccc;">Enjoy the beat 🎧</p>
+            <a href="{song_link}" target="_blank" 
+               style="display:inline-block; margin-top:10px; background:linear-gradient(90deg, #FF4081, #FF8A65); 
+                      color:white; padding:12px 25px; border-radius:10px; text-decoration:none; font-weight:bold;">
+               ▶️ Play on YouTube
+            </a>
+            <p style="color:#ccc; margin-top:10px;">Enjoy your vibe 🎧</p>
         </div>
         """, unsafe_allow_html=True)
     else:
         st.warning("No songs found for your selected mood and language!")
 
+# 🎨 Footer
 st.markdown("<hr><p style='text-align:center; color:gray;'>Built with ❤️ by Prem Kumar | Play It Bro 🎶</p>", unsafe_allow_html=True)
