@@ -1,171 +1,246 @@
+# ai_mood_music_prem.py
 import random
 import streamlit as st
 import urllib.parse
+import re
 
-# --- SONG DATA ---
+# ---------------------------
+#  DATA (song list with language)
+#  Format: (Title, Artist, YouTube URL, Language)
+# ---------------------------
 songs_data = {
-    "Happy": [
-        ("Happy", "Pharrell Williams", "https://www.youtube.com/watch?v=ZbZSe6N_BXs", "Pop/Funk"),
-        ("Uptown Funk", "Mark Ronson ft. Bruno Mars", "https://www.youtube.com/watch?v=OPf0YbXqDm0", "Dance/Funk"),
-        ("Can't Stop the Feeling!", "Justin Timberlake", "https://www.youtube.com/watch?v=ru0K8uYEZWw", "Pop"),
-        ("Shake It Off", "Taylor Swift", "https://www.youtube.com/watch?v=nfWlot6h_JM", "Pop"),
-        ("Good as Hell", "Lizzo", "https://www.youtube.com/watch?v=vuq-VAiW9kw", "R&B/Soul"),
-        ("Lovely Day", "Bill Withers", "https://www.youtube.com/watch?v=bO0yXbJd2iQ", "Soul/Classic"),
-        ("I Wanna Dance with Somebody", "Whitney Houston", "https://www.youtube.com/watch?v=eH3giaIzONA", "80s Pop")
-    ],
-    "Sad": [
-        ("Someone Like You", "Adele", "https://www.youtube.com/watch?v=hLQl3WQQoQ0", "Ballad"),
-        ("Let Her Go", "Passenger", "https://www.youtube.com/watch?v=RBumgq5yVrA", "Acoustic"),
-        ("When I Was Your Man", "Bruno Mars", "https://www.youtube.com/watch?v=ekzHIouo8Q4", "Ballad"),
-        ("Hello", "Adele", "https://www.youtube.com/watch?v=YQHsXMglC9A", "Soul"),
-        ("Hurt", "Johnny Cash", "https://www.youtube.com/watch?v=vt1P_0f5w9g", "Acoustic"),
-        ("Fix You", "Coldplay", "https://www.youtube.com/watch?v=k4V3Mo61fJM", "Rock")
-    ],
-    "Relaxed": [
-        ("Let It Be", "The Beatles", "https://www.youtube.com/watch?v=QDYfEBY9NM4", "Classic Rock"),
-        ("Perfect", "Ed Sheeran", "https://www.youtube.com/watch?v=2Vv-BfVoq4g", "Acoustic Pop"),
-        ("Lovely", "Billie Eilish & Khalid", "https://www.youtube.com/watch?v=V1Pl8CzNzCw", "Atmospheric"),
-        ("Sunflower", "Post Malone & Swae Lee", "https://www.youtube.com/watch?v=ApXoWvfEYVU", "Hip-Hop/Chill"),
-        ("Let Me Down Slowly", "Alec Benjamin", "https://www.youtube.com/watch?v=50VNCymT-Cs", "Acoustic Pop"),
-        ("A Thousand Years", "Christina Perry", "https://www.youtube.com/watch?v=rtOvBOTyX00", "Ballad")
-    ],
-    "Energetic": [
-        ("Believer", "Imagine Dragons", "https://www.youtube.com/watch?v=7wtfhZwyrcc", "Rock"),
-        ("Thunder", "Imagine Dragons", "https://www.youtube.com/watch?v=fKopy74weus", "Pop/Rock"),
-        ("Stronger", "Kanye West", "https://www.youtube.com/watch?v=PsO6ZnUZI0g", "Hip-Hop"),
-        ("Don't Start Now", "Dua Lipa", "https://www.youtube.com/watch?v=oygrmJFKYZY", "Dance/Pop"),
-        ("Titanium", "David Guetta ft. Sia", "https://www.youtube.com/watch?v=JRfuAukYTKg", "EDM")
+    "All": [
+        ("Happy", "Pharrell Williams", "https://www.youtube.com/watch?v=ZbZSe6N_BXs", "English"),
+        ("Uptown Funk", "Mark Ronson ft. Bruno Mars", "https://www.youtube.com/watch?v=OPf0YbXqDm0", "English"),
+        ("Can't Stop the Feeling!", "Justin Timberlake", "https://www.youtube.com/watch?v=ru0K8uYEZWw", "English"),
+        ("Shake It Off", "Taylor Swift", "https://www.youtube.com/watch?v=nfWlot6h_JM", "English"),
+        ("Good as Hell", "Lizzo", "https://www.youtube.com/watch?v=vuq-VAiW9kw", "English"),
+        ("Lovely Day", "Bill Withers", "https://www.youtube.com/watch?v=bO0yXbJd2iQ", "English"),
+        ("I Wanna Dance with Somebody", "Whitney Houston", "https://www.youtube.com/watch?v=eH3giaIzONA", "English"),
+        ("Someone Like You", "Adele", "https://www.youtube.com/watch?v=hLQl3WQQoQ0", "English"),
+        ("Let Her Go", "Passenger", "https://www.youtube.com/watch?v=RBumgq5yVrA", "English"),
+        ("When I Was Your Man", "Bruno Mars", "https://www.youtube.com/watch?v=ekzHIouo8Q4", "English"),
+        ("Hello", "Adele", "https://www.youtube.com/watch?v=YQHsXMglC9A", "English"),
+        ("Fix You", "Coldplay", "https://www.youtube.com/watch?v=k4V3Mo61fJM", "English"),
+        ("Let It Be", "The Beatles", "https://www.youtube.com/watch?v=QDYfEBY9NM4", "English"),
+        ("Perfect", "Ed Sheeran", "https://www.youtube.com/watch?v=2Vv-BfVoq4g", "English"),
+        ("Lovely", "Billie Eilish & Khalid", "https://www.youtube.com/watch?v=V1Pl8CzNzCw", "English"),
+        ("Sunflower", "Post Malone & Swae Lee", "https://www.youtube.com/watch?v=ApXoWvfEYVU", "English"),
+        ("Believer", "Imagine Dragons", "https://www.youtube.com/watch?v=7wtfhZwyrcc", "English"),
+        ("Thunder", "Imagine Dragons", "https://www.youtube.com/watch?v=fKopy74weus", "English"),
+        ("Don't Start Now", "Dua Lipa", "https://www.youtube.com/watch?v=oygrmJFKYZY", "English"),
+        ("Stronger", "Kanye West", "https://www.youtube.com/watch?v=PsO6ZnUZI0g", "English"),
+        ("Titanium", "David Guetta ft. Sia", "https://www.youtube.com/watch?v=JRfuAukYTKg", "English"),
+        # Telugu/Hindi/Tamil examples (replace or expand with real YouTube links you prefer)
+        ("Butta Bomma", "Armaan Malik", "https://www.youtube.com/watch?v=XYz2F8z4sVk", "Telugu"),
+        ("Samajavaragamana", "Sid Sriram", "https://www.youtube.com/watch?v=KQmnn2ZsXJ4", "Telugu"),
+        ("Tum Hi Ho", "Arijit Singh", "https://www.youtube.com/watch?v=Umqb9KENgmk", "Hindi"),
+        ("Kal Ho Naa Ho", "Sonu Nigam", "https://www.youtube.com/watch?v=VYY4Y2c9k7o", "Hindi"),
+        ("Naan Pizhaippeno", "Vijay Yesudas", "https://www.youtube.com/watch?v=example_tamil", "Tamil"),
+        ("Vaathi Coming", "Anirudh Ravichander", "https://www.youtube.com/watch?v=example_vaathi", "Tamil"),
     ]
 }
 
-REMIX_STYLES = [
-    "Original Vibe", "Acoustic Cover", "8-bit/Chiptune", 
-    "Dubstep Drop", "Lo-Fi Slowed", "Orchestral Sweep", "Reggaeton Bounce"
-]
+# ---------------------------
+#  Mood keyword map (lightweight detection)
+#  We'll look for these words in title / URL (lowercased)
+# ---------------------------
+MOOD_KEYWORDS = {
+    "Happy": ["happy", "celebrate", "party", "dance", "uptown", "feeling", "dance", "dancefloor"],
+    "Energetic": ["believer", "thunder", "stronger", "drop", "titanium", "can't hold us", "remix", "upbeat", "fast"],
+    "Sad": ["someone like you", "let her go", "hurt", "fix you", "goodbye", "missing", "alone", "cry", "sad", "tears"],
+    "Relaxed": ["perfect", "let it be", "ocean", "sunflower", "lovely", "calm", "lo-fi", "acoustic", "slow", "romantic", "love", "perfect"],
+    # "Romantic" could be folded into Relaxed, but we keep Relaxed as fallback
+}
 
-def generate_remix_description(song_title, remix_style):
-    desc = {
-        "Original Vibe": f"The original '{song_title}' stays true to your current mood!",
-        "Acoustic Cover": f"'{song_title}' turned mellow — just vocals and guitar strings.",
-        "8-bit/Chiptune": f"Retro vibes! '{song_title}' as if it’s from a GameBoy!",
-        "Dubstep Drop": f"'{song_title}' remixed with thunderous drops and bass power.",
-        "Lo-Fi Slowed": f"A rainy-day version of '{song_title}' — calm and nostalgic.",
-        "Orchestral Sweep": f"'{song_title}' turned cinematic with violins and emotion.",
-        "Reggaeton Bounce": f"'{song_title}' gets a Latin groove you can’t resist dancing to!"
-    }
-    return desc.get(remix_style, "A fresh remix take!")
+# ---------------------------
+#  Gradient color map per mood
+# ---------------------------
+GRADIENTS = {
+    "Happy": "linear-gradient(135deg, #FFEF9F 0%, #FFC371 100%);",       # yellow -> soft orange
+    "Sad": "linear-gradient(135deg, #89CFF0 0%, #7257A5 100%);",         # light blue -> purple
+    "Relaxed": "linear-gradient(135deg, #C7F9CC 0%, #7AE3D6 100%);",     # mint -> teal
+    "Energetic": "linear-gradient(135deg, #7CFFB2 0%, #00E5FF 100%);",   # neon green -> cyan
+    "Default": "linear-gradient(135deg, #FFDEE9 0%, #B5FFFC 100%);"      # pink -> sky
+}
 
-# Page Config
-st.set_page_config(page_title="AI Music Mood Generator 🎵", page_icon="🎧", layout="centered")
+# ---------------------------
+#  Utility: detect mood from metadata (fast keyword-based)
+# ---------------------------
+def detect_mood_from_text(text: str) -> str:
+    txt = (text or "").lower()
+    # remove punctuation for simpler matching
+    txt = re.sub(r"[^\w\s]", " ", txt)
+    for mood, keywords in MOOD_KEYWORDS.items():
+        for kw in keywords:
+            if kw in txt:
+                return mood
+    # fallback heuristics: length / exclamation marks -> energetic/happy
+    if txt.count("!") >= 1 or any(w in txt for w in ["remix", "party", "dance", "dj"]):
+        return "Energetic"
+    return "Relaxed"  # safe default
 
-# Session setup
-if 'current_mood' not in st.session_state:
-    st.session_state['current_mood'] = 'Happy'
-if 'selected_genre' not in st.session_state:
-    st.session_state['selected_genre'] = 'Any Genre'
-if 'selected_remix_style' not in st.session_state:
-    st.session_state['selected_remix_style'] = 'Original Vibe'
-if 'show_player' not in st.session_state:
-    st.session_state['show_player'] = False
+# ---------------------------
+#  Streamlit UI
+# ---------------------------
+st.set_page_config(page_title="AI Mood Music (Prem) 🎵", page_icon="🎧", layout="centered")
 
-# --- APP TITLE ---
+# initialize session state
+if "auto_mood_theme" not in st.session_state:
+    st.session_state["auto_mood_theme"] = True
+if "show_player" not in st.session_state:
+    st.session_state["show_player"] = False
+if "last_detected_mood" not in st.session_state:
+    st.session_state["last_detected_mood"] = "Default"
+if "last_recommendation" not in st.session_state:
+    st.session_state["last_recommendation"] = None
+
+# Header
 st.markdown("""
-<h1 style='text-align:center; color:#FF4081;'>🎶 AI Mood Music Generator</h1>
-<p style='text-align:center; font-size:18px; color:#444;'>Find your perfect song & remix for your current vibe!</p>
+<h1 style='text-align:center; margin-bottom:4px;'>🎶 AI Music Remix & Mood Generator (Prem)</h1>
+<p style='text-align:center; color:#444; margin-top:0;'>Automatic mood detection → dynamic gradient background. Language filter included.</p>
 """, unsafe_allow_html=True)
-
-# --- FILTER SECTION ---
-st.markdown("### 🎧 Select Your Mood")
-
-col_mood, col_genre = st.columns(2)
-
-with col_mood:
-    mood_choice = st.selectbox("Mood:", list(songs_data.keys()), index=list(songs_data.keys()).index(st.session_state['current_mood']))
-with col_genre:
-    genres = sorted(list(set(song[3] for song in songs_data[mood_choice])))
-    genre_choice = st.selectbox("Genre:", ["Any Genre"] + genres)
 
 st.markdown("---")
 
-# Remix style
-remix_style_choice = st.selectbox("Remix Style:", REMIX_STYLES)
+# Controls: Auto-theme toggle, show player toggle
+col_a, col_b = st.columns([1,1])
+with col_a:
+    st.session_state["auto_mood_theme"] = st.toggle("Auto Mood Theme (ON / OFF)", value=st.session_state["auto_mood_theme"],
+                                                   help="When ON the background gradient changes automatically based on the detected mood of the recommended song.")
+with col_b:
+    st.session_state["show_player"] = st.toggle("Show YouTube Player", value=st.session_state["show_player"],
+                                                help="Embed the YouTube player in-app when playing a recommendation.")
 
-# Toggle Player
-st.session_state['show_player'] = st.toggle("Show YouTube Player", value=st.session_state['show_player'])
+# Language filter (multi-select)
+available_languages = sorted(list(set([s[3] for s in songs_data["All"]])))
+selected_languages = st.multiselect("Filter by Language (choose 1 or more):",
+                                    options=available_languages,
+                                    default=available_languages)
 
-# --- BUTTON ---
-if st.button("Generate My Song ✨", use_container_width=True):
-    songs = songs_data[mood_choice]
-    if genre_choice != "Any Genre":
-        songs = [s for s in songs if s[3] == genre_choice]
-    song = random.choice(songs)
-    title, artist, url, genre = song
+st.markdown("---")
 
-    remix_desc = generate_remix_description(title, remix_style_choice)
+# Remix style (optional, lightweight)
+REMIX_STYLES = ["Original Vibe", "Acoustic Cover", "Lo-Fi Slowed", "8-bit/Chiptune", "Dubstep Drop", "Orchestral Sweep", "Reggaeton Bounce"]
+remix_style_choice = st.selectbox("AI Remix Style (simulated):", REMIX_STYLES, index=0)
 
-    st.success(f"**{mood_choice.upper()} Vibe Activated!**")
-    st.markdown(f"<h2 style='text-align:center;color:#222;'>🎵 {title}</h2>", unsafe_allow_html=True)
-    st.markdown(f"<h4 style='text-align:center;color:#555;'>by <b>{artist}</b></h4>", unsafe_allow_html=True)
-    st.markdown(f"<p style='text-align:center; color:#444; font-style:italic;'>{remix_desc}</p>", unsafe_allow_html=True)
+# Generate button
+if st.button("Generate Song Recommendation ✨", use_container_width=True):
+    # Filter by language
+    filtered = [s for s in songs_data["All"] if s[3] in selected_languages]
+    if not filtered:
+        st.warning("No songs found for the chosen language(s). Choose another language.")
+        st.stop()
 
-    if st.session_state['show_player']:
+    song = random.choice(filtered)
+    title, artist, youtube_url, lang = song
+
+    # Lightweight mood detection using title & url
+    metadata_text = f"{title} {artist} {youtube_url}"
+    detected_mood = detect_mood_from_text(metadata_text)
+    st.session_state["last_detected_mood"] = detected_mood
+
+    # Create a fun remix description (simple)
+    remix_desc = {
+        "Original Vibe": f"The original '{title}' tuned to your vibe.",
+        "Acoustic Cover": f"'{title}' stripped-back acoustic — raw feeling.",
+        "Lo-Fi Slowed": f"A chill lo-fi take on '{title}' for soft moods.",
+        "8-bit/Chiptune": f"'{title}' as a retro game theme (8-bit).",
+        "Dubstep Drop": f"High-energy bass remix of '{title}'.",
+        "Orchestral Sweep": f"A cinematic orchestral take on '{title}'.",
+        "Reggaeton Bounce": f"'{title}' with a Latin dembow groove — dance mode."
+    }.get(remix_style_choice, "")
+
+    # Save recommendation
+    st.session_state["last_recommendation"] = {
+        "title": title,
+        "artist": artist,
+        "url": youtube_url,
+        "language": lang,
+        "detected_mood": detected_mood,
+        "remix_style": remix_style_choice,
+        "remix_desc": remix_desc
+    }
+
+# If we have a recommendation show it
+rec = st.session_state.get("last_recommendation")
+if rec:
+    detected = rec["detected_mood"]
+    title = rec["title"]
+    artist = rec["artist"]
+    url = rec["url"]
+    remix_desc = rec["remix_desc"]
+
+    st.success(f"✅ Recommendation: {title} — {artist}  (Detected mood: {detected})")
+    st.markdown(f"<h2 style='text-align:center; margin-top:6px;'>🎵 {title}</h2>", unsafe_allow_html=True)
+    st.markdown(f"<h4 style='text-align:center; color:#333;'>by <b>{artist}</b> — <small>{rec['language']}</small></h4>", unsafe_allow_html=True)
+    st.markdown(f"<p style='text-align:center; font-style:italic; color:#333;'>{remix_desc}</p>", unsafe_allow_html=True)
+
+    if st.session_state["show_player"]:
         st.video(url)
-    
+
+    # External links
     spotify_query = urllib.parse.quote_plus(f"{title} {artist}")
     spotify_url = f"https://open.spotify.com/search/{spotify_query}"
 
-    col1, col2 = st.columns(2)
-    with col1:
-        st.link_button("▶️ Open on YouTube", url)
-    with col2:
-        st.link_button("🎧 Open on Spotify", spotify_url)
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown(f"""<a href="{url}" target="_blank"><button style="width:100%;height:48px;border-radius:8px;border:none;background:linear-gradient(90deg,#FF6A88,#FFA5C0);color:white;font-weight:700;">▶️ Open on YouTube</button></a>""", unsafe_allow_html=True)
+    with c2:
+        st.markdown(f"""<a href="{spotify_url}" target="_blank"><button style="width:100%;height:48px;border-radius:8px;border:none;background:linear-gradient(90deg,#6A11CB,#2575FC);color:white;font-weight:700;">🎧 Open on Spotify</button></a>""", unsafe_allow_html=True)
 
-# --- FOOTER ---
+# ---------------------------
+#  Dynamic CSS injection for gradient background
+# ---------------------------
+def get_active_gradient():
+    if st.session_state["auto_mood_theme"] and st.session_state.get("last_detected_mood"):
+        g = GRADIENTS.get(st.session_state["last_detected_mood"], GRADIENTS["Default"])
+    else:
+        g = GRADIENTS["Default"]
+    return g
+
+active_gradient = get_active_gradient()
+
+st.markdown(f"""
+<style>
+/* App background */
+.stApp {{
+    background: {active_gradient}
+    font-family: 'Poppins', 'Segoe UI', Roboto, Arial, sans-serif;
+    color: #111;
+    padding-top: 18px;
+}}
+/* Title style */
+h1{{ color: #222; }}
+/* Buttons */
+div.stButton > button {{
+    background: linear-gradient(90deg, #FF6A88, #FFA5C0);
+    color: white;
+    border-radius: 10px;
+    height: 46px;
+    font-size: 1.0rem;
+    font-weight: 700;
+}}
+div.stButton > button:hover {{
+    transform: scale(1.02);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+}}
+/* Success box */
+.stSuccess {{
+    background: rgba(255,255,255,0.9);
+    border-left: 6px solid rgba(0,0,0,0.08);
+    color: #111;
+}}
+/* Misc */
+hr{{ border: none; height: 2px; background: rgba(255,255,255,0.25); margin: 18px 0; border-radius:4px; }}
+</style>
+""", unsafe_allow_html=True)
+
+# Footer
 st.markdown("""
 <hr>
-<div style='text-align:center; font-size:14px; color:#333;'>
+<div style='text-align:center; font-size:13px; color:#222;'>
 Developed with ❤️ by <b>Chilkamarri Prem Kumar (TechBro)</b><br>
 Vignan Institute of Technology and Science, Hyderabad
 </div>
-""", unsafe_allow_html=True)
-
-# --- STYLING (Colorful Gradient Theme) ---
-st.markdown("""
-<style>
-.stApp {
-    background: linear-gradient(135deg, #FFDEE9 0%, #B5FFFC 100%);
-    font-family: 'Poppins', sans-serif;
-    color: #222;
-}
-div[data-testid="stSelectbox"] label {
-    color: #111;
-    font-weight: 600;
-}
-div.stButton > button {
-    background: linear-gradient(90deg, #FF4081, #81D4FA);
-    color: white;
-    border-radius: 10px;
-    border: none;
-    height: 3em;
-    font-size: 1.1em;
-    font-weight: bold;
-    transition: all 0.3s ease;
-}
-div.stButton > button:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-}
-.stSuccess {
-    background: #E1F5FE;
-    border-left: 5px solid #FF4081;
-    color: #111;
-    font-weight: 600;
-    border-radius: 6px;
-}
-hr {
-    border: none;
-    height: 2px;
-    background: linear-gradient(to right, #FF4081, #81D4FA);
-}
-</style>
 """, unsafe_allow_html=True)
