@@ -1,158 +1,91 @@
-"""
-fetch_100_songs.py
+import streamlit as st
+import random
 
-Produces songs_100.csv with columns:
-title,artist,youtube_url,spotify_id,mood
-
-Requires:
-pip install spotipy pandas
-A Spotify developer client id/secret (set below).
-"""
-
-import os
-import csv
-import time
-import spotipy
-from spotipy.oauth2 import SpotifyClientCredentials
-import pandas as pd
-from typing import List, Tuple
-
-# ---------- CONFIG ----------
-SPOTIFY_CLIENT_ID = "YOUR_CLIENT_ID_HERE"
-SPOTIFY_CLIENT_SECRET = "YOUR_CLIENT_SECRET_HERE"
-OUTPUT_CSV = "songs_100.csv"
-
-# Moods and example search keywords (used to find relevant tracks)
-MOOD_KEYWORDS = {
+# -----------------------------
+# 🎵 SONG DATABASE (100 per mood sample)
+# -----------------------------
+# For demonstration, using 10 songs each; you can expand to 100 easily
+songs_db = {
     "Happy": [
-        "happy", "feel good", "party", "dance", "uplifting", "pop hit", "summer"
+        ("Happy Song 1", "https://www.youtube.com/watch?v=dQw4w9WgXcQ"),
+        ("Happy Song 2", "https://www.youtube.com/watch?v=3GwjfUFyY6M"),
+        ("Happy Song 3", "https://www.youtube.com/watch?v=oHg5SJYRHA0"),
+        ("Happy Song 4", "https://www.youtube.com/watch?v=MtN1YnoL46Q"),
+        ("Happy Song 5", "https://www.youtube.com/watch?v=ZZ5LpwO-An4"),
+        ("Happy Song 6", "https://www.youtube.com/watch?v=6_b7RDuLwcI"),
+        ("Happy Song 7", "https://www.youtube.com/watch?v=L_jWHffIx5E"),
+        ("Happy Song 8", "https://www.youtube.com/watch?v=kJQP7kiw5Fk"),
+        ("Happy Song 9", "https://www.youtube.com/watch?v=fLexgOxsZu0"),
+        ("Happy Song 10", "https://www.youtube.com/watch?v=CevxZvSJLk8")
     ],
     "Sad": [
-        "sad", "ballad", "melancholy", "heartbreak", "slow", "emotional"
+        ("Sad Song 1", "https://www.youtube.com/watch?v=RBumgq5yVrA"),
+        ("Sad Song 2", "https://www.youtube.com/watch?v=hLQl3WQQoQ0"),
+        ("Sad Song 3", "https://www.youtube.com/watch?v=ekzHIouo8Q4"),
+        ("Sad Song 4", "https://www.youtube.com/watch?v=YQHsXMglC9A"),
+        ("Sad Song 5", "https://www.youtube.com/watch?v=vt1P_0f5w9g"),
+        ("Sad Song 6", "https://www.youtube.com/watch?v=k4V3Mo61fJM"),
+        ("Sad Song 7", "https://www.youtube.com/watch?v=5qap5aO4i9A"),
+        ("Sad Song 8", "https://www.youtube.com/watch?v=AN3JZ0kCzxY"),
+        ("Sad Song 9", "https://www.youtube.com/watch?v=hoNBkIbhvLQ"),
+        ("Sad Song 10", "https://www.youtube.com/watch?v=C3U77QFsjU0")
     ],
     "Energetic": [
-        "energetic", "upbeat", "workout", "party banger", "hit", "dance"
+        ("Energetic Song 1", "https://www.youtube.com/watch?v=7wtfhZwyrcc"),
+        ("Energetic Song 2", "https://www.youtube.com/watch?v=fKopy74weus"),
+        ("Energetic Song 3", "https://www.youtube.com/watch?v=PsO6ZnUZI0g"),
+        ("Energetic Song 4", "https://www.youtube.com/watch?v=oygrmJFKYZY"),
+        ("Energetic Song 5", "https://www.youtube.com/watch?v=2zNSgSzhBfM"),
+        ("Energetic Song 6", "https://www.youtube.com/watch?v=JRfuAukYTKg"),
+        ("Energetic Song 7", "https://www.youtube.com/watch?v=kJQP7kiw5Fk"),
+        ("Energetic Song 8", "https://www.youtube.com/watch?v=fLexgOxsZu0"),
+        ("Energetic Song 9", "https://www.youtube.com/watch?v=CevxZvSJLk8"),
+        ("Energetic Song 10", "https://www.youtube.com/watch?v=dQw4w9WgXcQ")
     ],
     "Romantic": [
-        "romantic", "love song", "romance", "romantic ballad", "slow love"
+        ("Romantic Song 1", "https://www.youtube.com/watch?v=3vLm-Lwibx0"),
+        ("Romantic Song 2", "https://www.youtube.com/watch?v=1J76wN0TPI4"),
+        ("Romantic Song 3", "https://www.youtube.com/watch?v=yIw2Y6sONJU"),
+        ("Romantic Song 4", "https://www.youtube.com/watch?v=Umqb9KENgmk"),
+        ("Romantic Song 5", "https://www.youtube.com/watch?v=Q8q0vFjzv-8"),
+        ("Romantic Song 6", "https://www.youtube.com/watch?v=3yYw2e4aGGE"),
+        ("Romantic Song 7", "https://www.youtube.com/watch?v=kGiOytZtJmE"),
+        ("Romantic Song 8", "https://www.youtube.com/watch?v=5O9q8IPlu6U"),
+        ("Romantic Song 9", "https://www.youtube.com/watch?v=Zp9HUcFZ6N8"),
+        ("Romantic Song 10", "https://www.youtube.com/watch?v=qzOeGW1gWVQ")
     ]
 }
 
-# How many songs per mood to collect (sum should be >= 100)
-PER_MOOD = 25  # 25 * 4 = 100
+# -----------------------------
+# 🌈 Mood Colors
+# -----------------------------
+mood_colors = {
+    "Happy": "#FFD700",
+    "Sad": "#4B0082",
+    "Energetic": "#FF4500",
+    "Romantic": "#FF69B4"
+}
 
-# ---------- Spotify client ----------
-if SPOTIFY_CLIENT_ID == "YOUR_CLIENT_ID_HERE" or SPOTIFY_CLIENT_SECRET == "YOUR_CLIENT_SECRET_HERE":
-    raise SystemExit("Please set SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET in this script before running.")
+# -----------------------------
+# STREAMLIT APP
+# -----------------------------
+st.set_page_config(page_title="Play It Bro 🎶", page_icon="🎵", layout="centered")
 
-auth_manager = SpotifyClientCredentials(client_id=SPOTIFY_CLIENT_ID, client_secret=SPOTIFY_CLIENT_SECRET)
-sp = spotipy.Spotify(auth_manager=auth_manager, requests_timeout=10, retries=3, status_retries=3)
+st.markdown(f"<h1 style='text-align:center; color:{mood_colors['Happy']}'>🎶 Play It Bro - Mood Based Songs 🎵</h1>", unsafe_allow_html=True)
+st.write("Select your mood and get a random hit song!")
 
-def search_tracks_for_keyword(keyword: str, limit: int = 20) -> List[dict]:
-    """Search Spotify for tracks matching a keyword."""
-    q = f"{keyword}"
-    try:
-        res = sp.search(q=q, type="track", limit=limit)
-    except Exception as e:
-        print("Spotify search error:", e)
-        return []
-    items = res.get("tracks", {}).get("items", [])
-    return items
+# Mood selection
+mood = st.radio("Select your mood:", list(songs_db.keys()), horizontal=True)
 
-def collect_mood_tracks(mood: str, keywords: List[str], need: int) -> List[Tuple[str,str,str,str]]:
-    """Collect unique tracks for a mood using several keywords.
-    Returns list of tuples: (title, artist, spotify_track_id, youtube_search_url)
-    """
-    collected = []
-    seen_track_ids = set()
-    # Try each keyword (broaden search)
-    for kw in keywords:
-        if len(collected) >= need:
-            break
-        items = search_tracks_for_keyword(kw, limit=30)
-        for it in items:
-            tid = it.get("id")
-            if not tid or tid in seen_track_ids:
-                continue
-            name = it.get("name", "").strip()
-            artists = ", ".join([a["name"] for a in it.get("artists", [])])
-            # Construct YouTube search URL (safe fallback)
-            yt_search_query = f"{name} {artists}"
-            youtube_search_url = f"https://www.youtube.com/results?search_query={requests_quote(yt_search_query)}"
-            collected.append((name, artists, youtube_search_url, tid))
-            seen_track_ids.add(tid)
-            if len(collected) >= need:
-                break
-        # small pause to be polite
-        time.sleep(0.25)
-    return collected
+# Recommend button
+if st.button("🎧 Recommend Me a Song"):
+    selected_song = random.choice(songs_db[mood])
+    song_name, song_link = selected_song
+    
+    st.markdown(f"### 🎵 {song_name}")
+    st.markdown(f"[Open on YouTube]({song_link})")
+    
+    # Embed video
+    st.video(song_link)
 
-def requests_quote(s: str) -> str:
-    # simple URL-encoding for query
-    from urllib.parse import quote_plus
-    return quote_plus(s)
-
-def main():
-    all_rows = []
-    print("Collecting songs from Spotify...")
-    for mood, keywords in MOOD_KEYWORDS.items():
-        print(f" - Mood: {mood}")
-        targets = PER_MOOD
-        mood_tracks = collect_mood_tracks(mood, keywords, targets)
-        print(f"   collected {len(mood_tracks)} for {mood}")
-        for (title, artist, yt_search, spid) in mood_tracks:
-            # Save as: title, artist, youtube_url (search), spotify_id, mood
-            all_rows.append({
-                "title": title,
-                "artist": artist,
-                "youtube_url": yt_search,
-                "spotify_id": spid,
-                "mood": mood
-            })
-
-    # If we didn't reach 100 exactly (due to de-duping), pad by searching top playlists
-    total = len(all_rows)
-    print(f"Total collected: {total}")
-    if total < 100:
-        # try fetching top tracks from global playlists
-        need_more = 100 - total
-        print(f"Need {need_more} more tracks — pulling from 'Top 50 Global' playlist")
-        try:
-            # Spotify's Top 50 global playlist id
-            top50_playlist_id = "37i9dQZEVXbMDoHDwVN2tF"  # may change; fallback to charts
-            playlist = sp.playlist_tracks(top50_playlist_id, limit=100)
-            for item in playlist.get("items", []):
-                track = item.get("track")
-                if not track:
-                    continue
-                tid = track.get("id")
-                if tid in [r["spotify_id"] for r in all_rows]:
-                    continue
-                name = track.get("name")
-                artists = ", ".join([a["name"] for a in track.get("artists", [])])
-                yt_search = f"https://www.youtube.com/results?search_query={requests_quote(name + ' ' + artists)}"
-                # assign leftover tracks to 'Happy' by default (or cycle moods)
-                mood_assign = "Happy" if len(all_rows) % 4 == 0 else ["Happy","Sad","Energetic","Romantic"][len(all_rows) % 4]
-                all_rows.append({
-                    "title": name,
-                    "artist": artists,
-                    "youtube_url": yt_search,
-                    "spotify_id": tid,
-                    "mood": mood_assign
-                })
-                if len(all_rows) >= 100:
-                    break
-            print(f"After padding, total = {len(all_rows)}")
-        except Exception as e:
-            print("Could not fetch playlist for padding:", e)
-
-    # Trim to exactly 100
-    all_rows = all_rows[:100]
-
-    # Write CSV
-    df = pd.DataFrame(all_rows, columns=["title","artist","youtube_url","spotify_id","mood"])
-    df.to_csv(OUTPUT_CSV, index=False, encoding="utf-8")
-    print(f"Wrote {len(df)} rows to {OUTPUT_CSV} — open that CSV and upload to your Streamlit app.")
-
-if __name__ == "__main__":
-    main()
+st.markdown("<hr><p style='text-align:center;'>Built with ❤️ by Prem Kumar</p>", unsafe_allow_html=True)
