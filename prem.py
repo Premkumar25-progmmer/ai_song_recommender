@@ -1,178 +1,132 @@
 import streamlit as st
 import random
-import urllib.parse
 
-st.set_page_config(page_title="Play It Bro — Mood Music", page_icon="🎧", layout="centered")
-
-# -------------------------
-# Song database: only live YouTube links
-# -------------------------
-SONGS = [
-    # Telugu
-    ("Rowdy Baby", "Dhanush & Dhee", "https://www.youtube.com/watch?v=xRvB7pM3K0A", "Tamil", "Energetic"),
-    ("Naatu Naatu", "Rahul Sipligunj, Kaala Bhairava", "https://www.youtube.com/watch?v=OsU0CGZoV8E", "Telugu", "Energetic"),
-    ("Butta Bomma", "Armaan Malik", "https://www.youtube.com/watch?v=ksLZEepQ0nQ", "Telugu", "Romantic"),
-    ("Samajavaragamana", "Sid Sriram", "https://www.youtube.com/watch?v=EJ6YlX3p0Rg", "Telugu", "Romantic"),
-    ("Nee Kallu Neeli Samudram", "Javed Ali", "https://www.youtube.com/watch?v=J7d3Gm0X3R8", "Telugu", "Sad"),
-
-    # Hindi
-    ("Tum Hi Ho", "Arijit Singh", "https://www.youtube.com/watch?v=Umqb9KENgmk", "Hindi", "Sad"),
-    ("Kal Ho Naa Ho", "Sonu Nigam", "https://www.youtube.com/watch?v=RhxF9Qg5mOU", "Hindi", "Romantic"),
-    ("Malhari", "Vishal Dadlani", "https://www.youtube.com/watch?v=YxWlaYCA8MU", "Hindi", "Energetic"),
-    ("Channa Mereya", "Arijit Singh", "https://www.youtube.com/watch?v=284Ov7ysmfA", "Hindi", "Sad"),
-
-    # Tamil
-    ("Vaathi Coming", "Anirudh Ravichander", "https://www.youtube.com/watch?v=MPV2METPeJU", "Tamil", "Energetic"),
-    ("Enna Solla Pogirai", "Shankar Mahadevan", "https://www.youtube.com/watch?v=PL8PZkBwU3E", "Tamil", "Romantic"),
-    ("Arabic Kuthu", "Anirudh Ravichander", "https://www.youtube.com/watch?v=Sa2jYn1LIVI", "Tamil", "Happy"),
-]
-
-# -------------------------
-# Mood gradient families
-# -------------------------
-MOOD_GRADIENTS = {
-    "Happy": [
-        "linear-gradient(135deg, #FFF59D 0%, #FFB74D 100%)",
-        "linear-gradient(135deg, #FFEEAD 0%, #FF8A65 100%)"
-    ],
-    "Sad": [
-        "linear-gradient(135deg, #89CFF0 0%, #6A5ACD 100%)",
-        "linear-gradient(135deg, #A8C7FF 0%, #7B61FF 100%)"
-    ],
-    "Romantic": [
-        "linear-gradient(135deg, #FFD1DC 0%, #FF8FA3 100%)",
-        "linear-gradient(135deg, #FFC1E3 0%, #FF9AA2 100%)"
-    ],
-    "Energetic": [
-        "linear-gradient(135deg, #FF7E5F 0%, #FEB47B 100%)",
-        "linear-gradient(135deg, #7CFFB2 0%, #00E5FF 100%)"
-    ],
-    "Relaxed": [
-        "linear-gradient(135deg, #C7F9CC 0%, #7AE3D6 100%)",
-        "linear-gradient(135deg, #D0F2EA 0%, #A1E3DA 100%)"
-    ]
-}
-DEFAULT_GRADIENT = "linear-gradient(135deg, #FFDEE9 0%, #B5FFFC 100%)"
-
-# -------------------------
-# Header
-# -------------------------
-st.markdown("""
-    <div style="text-align:center;">
-        <h1>🎶 Play It Bro — Mood Music</h1>
-        <p style="color:#444;">Choose your mood and languages to get a real playable song!</p>
-    </div>
-""", unsafe_allow_html=True)
-
-st.markdown("---")
-
-# -------------------------
-# Language and mood selection
-# -------------------------
-LANG_LABELS = ["🇮🇳 Telugu", "🇮🇳 Hindi", "🇮🇳 Tamil"]
-label_to_lang = {
-    "🇮🇳 Telugu": "Telugu",
-    "🇮🇳 Hindi": "Hindi",
-    "🇮🇳 Tamil": "Tamil"
+# 🎵 Mood-based songs with working YouTube links
+songs_db = {
+    "Happy": {
+        "Telugu": [
+            ("Rowdy Baby - Maari 2", "https://www.youtube.com/watch?v=x6Q7c9RyMzk"),
+            ("Ma Ma Mahesha - Sarkaru Vaari Paata", "https://www.youtube.com/watch?v=k6ZrM5vYxCk"),
+            ("Whattey Beauty - Bheeshma", "https://www.youtube.com/watch?v=TLaaK5gO6Hk")
+        ],
+        "Hindi": [
+            ("Kala Chashma - Baar Baar Dekho", "https://www.youtube.com/watch?v=k4yXQkG2s1E"),
+            ("Kar Gayi Chull - Kapoor & Sons", "https://www.youtube.com/watch?v=5AqOjl8lC6Q"),
+            ("Dil Dhadakne Do - Zindagi Na Milegi Dobara", "https://www.youtube.com/watch?v=GQ3AcPEPyT8")
+        ],
+        "Tamil": [
+            ("Vaathi Coming - Master", "https://www.youtube.com/watch?v=NKz1j8ZzAcg"),
+            ("Arabic Kuthu - Beast", "https://www.youtube.com/watch?v=ObxBja3r3tQ"),
+            ("Jimikki Kammal - Velipadinte Pusthakam", "https://www.youtube.com/watch?v=I4Xxr8b_Yns")
+        ]
+    },
+    "Sad": {
+        "Telugu": [
+            ("Nee Kallu Neeli Samudram - Uppena", "https://www.youtube.com/watch?v=7kjb0WvPq1s"),
+            ("The Life of Ram - Jaanu", "https://www.youtube.com/watch?v=zFZbHjPl4g0"),
+            ("Samajavaragamana - Ala Vaikunthapurramuloo", "https://www.youtube.com/watch?v=4J1RbhM7b8c")
+        ],
+        "Hindi": [
+            ("Channa Mereya - Ae Dil Hai Mushkil", "https://www.youtube.com/watch?v=284Ov7ysmfA"),
+            ("Agar Tum Saath Ho - Tamasha", "https://www.youtube.com/watch?v=-OnO4bQMuX0"),
+            ("Tera Ban Jaunga - Kabir Singh", "https://www.youtube.com/watch?v=3eUl2TQ1D_c")
+        ],
+        "Tamil": [
+            ("Vaseegara - Minnale", "https://www.youtube.com/watch?v=4TSJhIZmL0A"),
+            ("Pogiren - Anniyan", "https://www.youtube.com/watch?v=ZHDxje7zX5I"),
+            ("Enna Solla Pogirai - Kandukondain Kandukondain", "https://www.youtube.com/watch?v=6e6zvJ6r8nc")
+        ]
+    },
+    "Romantic": {
+        "Telugu": [
+            ("Inkem Inkem Inkem Kaavaale - Geetha Govindam", "https://www.youtube.com/watch?v=3vLm-Lwibx0"),
+            ("Butta Bomma - Ala Vaikunthapurramuloo", "https://www.youtube.com/watch?v=1J76wN0TPI4"),
+            ("Priyathama Priyathama - Majili", "https://www.youtube.com/watch?v=yIw2Y6sONJU")
+        ],
+        "Hindi": [
+            ("Tum Hi Ho - Aashiqui 2", "https://www.youtube.com/watch?v=Umqb9KENgmk"),
+            ("Raabta - Agent Vinod", "https://www.youtube.com/watch?v=Q8q0vFjzv-8"),
+            ("Pehla Nasha - Jo Jeeta Wohi Sikandar", "https://www.youtube.com/watch?v=3yYw2e4aGGE")
+        ],
+        "Tamil": [
+            ("Anbe En Anbe - Dhaam Dhoom", "https://www.youtube.com/watch?v=kGiOytZtJmE"),
+            ("Kanave Kanave - David", "https://www.youtube.com/watch?v=5O9q8IPlu6U"),
+            ("Munbe Vaa - Sillunu Oru Kadhal", "https://www.youtube.com/watch?v=Zp9HUcFZ6N8")
+        ]
+    },
+    "Energetic": {
+        "Telugu": [
+            ("Ramuloo Ramulaa - Ala Vaikunthapurramuloo", "https://www.youtube.com/watch?v=Gx_B0YzqjDs"),
+            ("Mind Block - Sarileru Neekevvaru", "https://www.youtube.com/watch?v=jKthYgm1JzE"),
+            ("Naatu Naatu - RRR", "https://www.youtube.com/watch?v=OsU0CGZoV8E")
+        ],
+        "Hindi": [
+            ("Malhari - Bajirao Mastani", "https://www.youtube.com/watch?v=UoFzG7w6n8E"),
+            ("Zinda - Bhaag Milkha Bhaag", "https://www.youtube.com/watch?v=4tiVPffH0Tg"),
+            ("Jai Jai Shivshankar - War", "https://www.youtube.com/watch?v=YxWlaYCA8MU")
+        ],
+        "Tamil": [
+            ("Aalaporan Thamizhan - Mersal", "https://www.youtube.com/watch?v=qzOeGW1gWVQ"),
+            ("Surviva - Vivegam", "https://www.youtube.com/watch?v=sAhK9Vd214c"),
+            ("Verithanam - Bigil", "https://www.youtube.com/watch?v=GQ8_0NQYlJQ")
+        ]
+    }
 }
 
-selected_labels = st.multiselect(
-    "Choose language(s):",
-    options=LANG_LABELS,
-    default=["🇮🇳 Telugu"]
-)
-selected_langs = [label_to_lang[l] for l in selected_labels]
+# 🌈 Mood-based gradient colors
+gradients = {
+    "Happy": ["linear-gradient(135deg, #FFD54F, #FF8A65)", "linear-gradient(135deg, #FFF176, #FFB74D)"],
+    "Sad": ["linear-gradient(135deg, #90CAF9, #4A148C)", "linear-gradient(135deg, #7986CB, #3F51B5)"],
+    "Romantic": ["linear-gradient(135deg, #F48FB1, #F06292)", "linear-gradient(135deg, #FFCDD2, #E91E63)"],
+    "Energetic": ["linear-gradient(135deg, #FF7043, #FFEE58)", "linear-gradient(135deg, #FF5722, #FFC107)"]
+}
 
-mood_options = ["Happy", "Sad", "Romantic", "Energetic", "Relaxed"]
-mood_choice = st.selectbox("Select Mood:", mood_options, index=0)
+# 🎨 Pick random gradient based on mood
+def random_gradient(mood):
+    return random.choice(gradients[mood])
 
-show_player = st.checkbox("Show YouTube Player", value=True)
+# 🌈 Apply background gradient
+mood_placeholder = st.empty()
 
-st.markdown("---")
+# 🎧 App title
+st.markdown("<h1 style='text-align:center; color:#FF4081;'>🎶 Play It Bro - Mood Based Song Recommender 🎵</h1>", unsafe_allow_html=True)
+st.write("#### Let's find the perfect song for your vibe!")
 
-# -------------------------
-# Song recommendation logic
-# -------------------------
-if st.button("Find me a song 🎧", use_container_width=True):
-    candidates = [s for s in SONGS if s[3] in selected_langs and s[4] == mood_choice]
-    if not candidates:
-        st.warning("No songs found for this mood + language combination. Try other options.")
-    else:
-        song = random.choice(candidates)
-        st.session_state["current_song"] = {
-            "title": song[0],
-            "artist": song[1],
-            "url": song[2],
-            "language": song[3],
-            "mood": song[4]
-        }
+# 🎭 Mood selection
+mood = st.radio("Select your mood:", list(songs_db.keys()), horizontal=True)
 
-# -------------------------
-# Display recommendation
-# -------------------------
-rec = st.session_state.get("current_song")
-if rec:
-    grad_list = MOOD_GRADIENTS.get(rec["mood"], [DEFAULT_GRADIENT])
-    active_gradient = random.choice(grad_list)
+# 🌐 Language multiselect (Telugu, Hindi, Tamil only)
+languages = st.multiselect("Choose languages:", ["Telugu", "Hindi", "Tamil"], default=["Telugu"])
 
-    st.markdown(f"""
-        <style>
-        .stApp {{
-            background: {active_gradient};
-            font-family: 'Poppins', 'Segoe UI', sans-serif;
-            color: #111;
-        }}
-        .pill-btn {{
-            display:inline-block;
-            padding:10px 14px;
-            border-radius:12px;
-            text-decoration:none;
-            font-weight:700;
-            margin:6px;
-            color:#fff !important;
-        }}
-        .yt-pill {{ background: linear-gradient(90deg,#FF6A88,#FFA5C0); }}
-        .sp-pill {{ background: linear-gradient(90deg,#6A11CB,#2575FC); }}
-        .info-card {{
-            background: rgba(255,255,255,0.95);
-            padding:18px;
-            border-radius:14px;
-            box-shadow: 0 12px 40px rgba(0,0,0,0.08);
-        }}
-        </style>
-    """, unsafe_allow_html=True)
+# 🖼️ Apply mood gradient background dynamically
+bg_gradient = random_gradient(mood)
+page_bg = f"""
+<style>
+[data-testid="stAppViewContainer"] {{
+background: {bg_gradient};
+background-attachment: fixed;
+}}
+</style>
+"""
+st.markdown(page_bg, unsafe_allow_html=True)
 
-    st.success(f"✅ {rec['mood']} pick: {rec['title']} — {rec['artist']} ({rec['language']})")
-
-    st.markdown(f"""
-        <div class="info-card">
-            <h2 style="text-align:center;">🎵 {rec['title']}</h2>
-            <h4 style="text-align:center;">by {rec['artist']}</h4>
-            <p style="text-align:center;">Mood: <b>{rec['mood']}</b></p>
+# 🎵 Recommend button
+if st.button("🎧 Recommend Me a Song"):
+    selected = []
+    for lang in languages:
+        selected += songs_db[mood].get(lang, [])
+    if selected:
+        song_name, song_link = random.choice(selected)
+        st.markdown(f"""
+        <div style="text-align:center; background-color:rgba(0,0,0,0.6); color:white; padding:25px; border-radius:15px;">
+            <h2>🎵 Mood: <span style="color:#FFD700;">{mood}</span></h2>
+            <h3>✨ Song: <a href="{song_link}" target="_blank" style="color:#4CAF50; text-decoration:none;">{song_name}</a></h3>
+            <iframe width="360" height="215" src="{song_link.replace('watch?v=', 'embed/')}" frameborder="0" allowfullscreen></iframe>
+            <p style="color:#ccc;">Enjoy the beat 🎧</p>
         </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
+    else:
+        st.warning("No songs found for your selected mood and language!")
 
-    if show_player:
-        st.video(rec["url"])
-
-    spotify_query = urllib.parse.quote_plus(f"{rec['title']} {rec['artist']}")
-    spotify_url = f"https://open.spotify.com/search/{spotify_query}"
-
-    yt_html = f'<a class="pill-btn yt-pill" href="{rec["url"]}" target="_blank">▶️ YouTube</a>'
-    sp_html = f'<a class="pill-btn sp-pill" href="{spotify_url}" target="_blank">🎧 Spotify</a>'
-
-    st.markdown(f'<div style="text-align:center">{yt_html} {sp_html}</div>', unsafe_allow_html=True)
-
-else:
-    st.markdown(f"""
-        <style>
-        .stApp {{
-            background: {DEFAULT_GRADIENT};
-            font-family: 'Poppins', sans-serif;
-            color: #111;
-        }}
-        </style>
-    """, unsafe_allow_html=True)
-
-st.markdown("---")
-st.markdown("<div style='text-align:center; color:#222;'>Developed with ❤️ by <b>Chilkamarri Prem Kumar (TechBro)</b></div>", unsafe_allow_html=True)
+# 🎨 Footer
+st.markdown("<hr><p style='text-align:center; color:gray;'>Built with ❤️ by Prem Kumar | Play It Bro 🎶</p>", unsafe_allow_html=True)
